@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --primary-hover: #4338CA;
+            --success-color: #22C55E;
+            --error-color: #EF4444;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-300: #D1D5DB;
+            --gray-700: #374151;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #F9FAFB;
+            color: var(--gray-700);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #6B7280;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--gray-300);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--primary-color);
+            background: #EEF2FF;
+        }
+
+        .drop-zone.has-file {
+            border-color: var(--success-color);
+            background: #F0FDF4;
+        }
+
+        .drop-zone i {
+            font-size: 2.5rem;
+            color: var(--gray-300);
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .select-button {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .select-button:hover {
+            background: var(--primary-hover);
+        }
+
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .format-button {
+            padding: 0.75rem;
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .format-button:hover {
+            border-color: var(--primary-color);
+        }
+
+        .format-button.active {
+            background: #EEF2FF;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .convert-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .convert-button:disabled {
+            background: var(--gray-300);
+            cursor: not-allowed;
+        }
+
+        .convert-button:not(:disabled):hover {
+            background: var(--primary-hover);
+        }
+
+        .selected-file {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .selected-file i {
+            color: var(--success-color);
+        }
+
+        .remove-file {
+            color: var(--error-color);
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0.25rem;
+        }
+
+        .alert {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert.success {
+            background: #F0FDF4;
+            border: 1px solid var(--success-color);
+            color: #166534;
+        }
+
+        .alert i {
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                margin: 1rem auto;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .format-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Audio Converter</h1>
+            <p>Konvertieren Sie Ihre Audiodateien in verschiedene Formate</p>
+        </header>
+
+        <div class="drop-zone" id="dropZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Ziehen Sie Ihre Audiodatei hierher oder</p>
+            <input type="file" id="fileInput" class="file-input" accept="audio/*">
+            <button class="select-button" onclick="document.getElementById('fileInput').click()">
+                Datei auswählen
+            </button>
+            <div class="selected-file" id="selectedFile" style="display: none">
+                <i class="fas fa-music"></i>
+                <span id="fileName"></span>
+                <button class="remove-file" id="removeFile">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <p style="margin-bottom: 0.75rem; font-weight: 500;">Ausgabeformat wählen:</p>
+            <div class="format-grid" id="formatGrid">
+                <button class="format-button active" data-format="wav">.wav</button>
+                <button class="format-button" data-format="mp3">.mp3</button>
+                <button class="format-button" data-format="aac">.aac</button>
+                <button class="format-button" data-format="flac">.flac</button>
+                <button class="format-button" data-format="ogg">.ogg</button>
+                <button class="format-button" data-format="m4a">.m4a</button>
+            </div>
+        </div>
+
+        <button class="convert-button" id="convertButton" disabled>
+            Konvertieren
+        </button>
+
+        <div class="alert success" id="successAlert" style="display: none">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <strong>Erfolg!</strong>
+                <p>Ihre Datei wurde erfolgreich konvertiert.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFile = document.getElementById('selectedFile');
+        const fileName = document.getElementById('fileName');
+        const removeFile = document.getElementById('removeFile');
+        const formatButtons = document.querySelectorAll('.format-button');
+        const convertButton = document.getElementById('convertButton');
+        const successAlert = document.getElementById('successAlert');
+
+        let currentFile = null;
+        let selectedFormat = 'wav';
+
+        // Drag & Drop Funktionalität
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('dragover');
+            });
+        });
+
+        dropZone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        removeFile.addEventListener('click', handleFileRemove);
+
+        formatButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                formatButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                selectedFormat = button.dataset.format;
+            });
+        });
+
+        convertButton.addEventListener('click', handleConvert);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            handleFile(file);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            handleFile(file);
+        }
+
+        function handleFile(file) {
+            if (file && file.type.startsWith('audio/')) {
+                currentFile = file;
+                fileName.textContent = file.name;
+                selectedFile.style.display = 'flex';
+                dropZone.classList.add('has-file');
+                convertButton.disabled = false;
+                successAlert.style.display = 'none';
+            }
+        }
+
+        function handleFileRemove() {
+            currentFile = null;
+            fileInput.value = '';
+            selectedFile.style.display = 'none';
+            dropZone.classList.remove('has-file');
+            convertButton.disabled = true;
+            successAlert.style.display = 'none';
+        }
+
+        function handleConvert() {
+            // Hier später Backend-Anbindung
+            convertButton.disabled = true;
+            
+            // Simuliere Konvertierung
+            setTimeout(() => {
+                successAlert.style.display = 'flex';
+                convertButton.disabled = false;
+            }, 1500);
+
+            // Für Backend-Integration später:
+            const formData = new FormData();
+            formData.append('audio', currentFile);
+            formData.append('format', selectedFormat);
+            
+            // fetch('/convert', {
+            //     method: 'POST',
+            //     body: formData
+            // })
+            // .then(response => response.blob())
+            // .then(blob => {
+            //     const url = window.URL.createObjectURL(blob);
+            //     const a = document.createElement('a');
+            //     a.href = url;
+            //     a.download = `converted.${selectedFormat}`;
+            //     a.click();
+            // });
+        }
+    </script>
+</body>
+</html>
